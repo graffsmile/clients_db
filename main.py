@@ -1,4 +1,4 @@
-# from pprint import pprint
+from pprint import pprint
 import psycopg2
 from psycopg2.sql import Identifier, SQL
 from dotenv import load_dotenv
@@ -102,53 +102,36 @@ def delete_client(conn, id=None):
 def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
     """"
     Поиск клиента по его данным.
-    Возвращает всех клиентов, если данные из поиска совпадают, например:
-    если поиск только по фамилии, то вернутся данные всех однофамильцев
+    Возвращает информацию о клиентах в виде:
+    id, first_name, last_name, email, phone
 
     """
     with conn.cursor() as cur:
-        query = """
+        cur.execute("""
             SELECT c.id, c.first_name, c.last_name, c.email, p.phone
             FROM clients c
             LEFT JOIN phones p ON c.id = p.client_id
-            WHERE
-        """
-        find = []
-        params = []
-        if first_name:
-            find.append('c.first_name = %s')
-            params.append(first_name)
-        if last_name:
-            find.append('c.last_name = %s')
-            params.append(last_name)
-        if email:
-            find.append('c.email = %s')
-            params.append(email)
-        if phone:
-            find.append('p.phone = %s')
-            params.append(phone)
-
-        query += ' AND '.join(find)
-
-        cur.execute(query, params)
-        result = cur.fetchall()
-        for row in result:
-            print(row)
+            WHERE (first_name = %(first_name)s OR %(first_name)s IS NULL)
+            OR (last_name = %(last_name)s AND %(last_name)s IS NULL)
+            OR (email = %(email)s OR %(email)s IS NULL)            
+            OR (phone = %(phone)s OR %(phone)s IS NULL);
+        """, {'first_name': first_name, 'last_name': last_name, 'email': email, 'phone': phone})
+        return cur.fetchall()
 
 if __name__ == '__main__':
     with psycopg2.connect(database='clients_db', user='postgres', password=password_psq) as conn:
     
         create_db(conn)
-        add_client(conn, 'Яков', 'Иванов', 'yak_iv@ya.ru')
-        add_client(conn, 'Петя', 'Васечкин', 'vasechkin@ya.ru')
-        add_client(conn, 'Василий', 'Теркин', 'vas_ter@internet.ru')
-        add_phones(conn, 1, 89089990101)
-        add_phones(conn, 1, 83435555555)
-        add_phones(conn, 2, '5555')
-        add_phones(conn, 3, 88003000600)
-        update_client(conn, 2, '', 'Иванов', '')
-        delete_phone(conn, 1, '83435555555')
-        delete_client(conn,3)
-        find_client(conn, '', 'Иванов', '','5555')
+        add_client(conn, first_name='Яков', last_name='Иванов', email='yak_iv@ya.ru')
+        add_client(conn, first_name='Петя', last_name='Васечкин', email='vasechkin@ya.ru')
+        add_client(conn, first_name='Василий', last_name='Теркин', email='vas_ter@internet.ru')
+        add_phones(conn, client_id=1, phone=89089990101)
+        add_phones(conn, client_id=1, phone=83435555555)
+        add_phones(conn, client_id=2, phone='5555')
+        add_phones(conn, client_id=3, phone=88003000600)
+        update_client(conn, id=2, first_name='', last_name='Иванов', email='')
+        delete_phone(conn, client_id=1, phone='83435555555')
+        delete_client(conn,id=3)
+        pprint(find_client(conn, first_name='Яков', last_name='Иванов', email='', phone=''))
 
 conn.close()
