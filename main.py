@@ -90,7 +90,10 @@ def delete_client(conn, id=None):
     Удаление клиента,
     а также телефонного номера
     """
-    # delete_phone(conn, client_id=id)
+    with conn.cursor() as cur:
+        cur.execute("""
+                DELETE FROM phones WHERE client_id = %s;                                                
+                """, (id, ))
     with conn.cursor() as cur:
         cur.execute("""
                 DELETE FROM clients WHERE id = %s;                                                
@@ -132,21 +135,20 @@ def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
         for row in result:
             print(row)
 
-with psycopg2.connect(database='clients_db', user='postgres', password=password_psq) as conn:
-
-    create_db(conn)
-    add_client(conn, 'Яков', 'Иванов', 'yak_iv@ya.ru')
-    add_client(conn, 'Петя', 'Васечкин', 'vasechkin@ya.ru')
-    add_client(conn, 'Василий', 'Теркин', 'vas_ter@internet.ru')
-    add_phones(conn, 1, 89089990101)
-    add_phones(conn, 1, 83435555555)
-    add_phones(conn, 2, '5555')
-    add_phones(conn, 3, 88003000600)
-    update_client(conn, 2, '', 'Иванов', '')
-    delete_phone(conn, 1, '83435555555')
-    # delete_client(conn,3)
-    find_client(conn, '', 'Иванов', '','5555')
-
-
+if __name__ == '__main__':
+    with psycopg2.connect(database='clients_db', user='postgres', password=password_psq) as conn:
+    
+        create_db(conn)
+        add_client(conn, 'Яков', 'Иванов', 'yak_iv@ya.ru')
+        add_client(conn, 'Петя', 'Васечкин', 'vasechkin@ya.ru')
+        add_client(conn, 'Василий', 'Теркин', 'vas_ter@internet.ru')
+        add_phones(conn, 1, 89089990101)
+        add_phones(conn, 1, 83435555555)
+        add_phones(conn, 2, '5555')
+        add_phones(conn, 3, 88003000600)
+        update_client(conn, 2, '', 'Иванов', '')
+        delete_phone(conn, 1, '83435555555')
+        delete_client(conn,3)
+        find_client(conn, '', 'Иванов', '','5555')
 
 conn.close()
